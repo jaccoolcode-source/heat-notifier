@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/jaccu/Documents/Projects/heat-notifier -type f \\\\\\(-name *.md -o -name *.json -o -name *.env* -o -name Makefile -o -name *.yml -o -name *.yaml -o -name *.py -o -name *.js -o -name *.ts \\\\\\))",
+      "Bash(claude:*)",
+      "Bash(netstat -ano)",
+      "Bash(reg query:*)",
+      "Bash(tasklist /FI \"PID eq 53060\")",
+      "Bash(tasklist /FI \"PID eq 94564\")",
+      "Bash(tasklist)",
+      "Bash(for pid:*)",
+      "Bash(do echo:*)",
+      "Bash(grep \" $pid \")",
+      "Bash(done)",
+      "Bash(npm install:*)",
+      "Bash(curl -s http://localhost:3000/api/data)",
+      "Bash(node server.js)",
+      "Bash(curl -s http://localhost:3000/api/recipients)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''lockfileVersion:'''', d.get\\(''''lockfileVersion''''\\)\\)\")",
+      "Bash(docker build:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(docker compose:*)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''Days:'''', len\\(d[''''days'''']\\), ''''| Years:'''', list\\(d[''''months''''].keys\\(\\)\\)\\)\")",
+      "Bash(docker ps:*)"
+    ]
+  }
+}

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solar Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-left">
+      <span class="header-icon">☀️</span>
+      <div>
+        <h1>Solar Dashboard</h1>
+        <p class="last-updated" id="lastUpdated">Loading…</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-secondary" id="btnHistory" onclick="startHistoryFetch()">
+        📥 Fetch All History
+      </button>
+      <button class="btn btn-primary" id="btnRefresh" onclick="refresh()">
+        🔄 Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- ── PROGRESS BAR ──────────────────────────────────────────────────── -->
+  <div class="progress-wrap" id="progressWrap" style="display:none">
+    <div class="progress-track">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <p class="progress-label" id="progressLabel">Fetching history…</p>
+  </div>
+
+  <!-- ── MAIN CONTENT ──────────────────────────────────────────────────── -->
+  <main class="container">
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid">
+      <div class="card kpi-card">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-label">This Month</div>
+        <div class="kpi-value" id="kpiMonth">—</div>
+        <div class="kpi-sub">kWh generated</div>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-icon">📆</div>
+        <div class="kpi-label">Last 7 Days</div>
+        <div class="kpi-value" id="kpiWeek">—</div>
+        <div class="kpi-sub">kWh generated</div>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-icon">🏆</div>
+        <div class="kpi-label">Best Single Day</div>
+        <div class="kpi-value" id="kpiBest">—</div>
+        <div class="kpi-sub" id="kpiBestDate">kWh</div>
+      </div>
+      <div class="card kpi-card">
+        <div class="kpi-icon">⚡</div>
+        <div class="kpi-label">All-Time Total</div>
+        <div class="kpi-value" id="kpiTotal">—</div>
+        <div class="kpi-sub">kWh since installation</div>
+      </div>
+    </section>
+
+    <!-- Monthly Comparison Chart -->
+    <section class="card chart-card">
+      <div class="chart-header">
+        <div>
+          <h2>Monthly Generation Comparison</h2>
+          <p class="chart-subtitle">Total kWh per month — all available years</p>
+        </div>
+        <div class="year-toggles">
+          <label class="toggle">
+            <input type="checkbox" id="toggle2024" checked onchange="toggleYear(0)" />
+            <span class="badge badge-2024">2024</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="toggle2025" checked onchange="toggleYear(1)" />
+            <span class="badge badge-2025">2025</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="toggle2026" checked onchange="toggleYear(2)" />
+            <span class="badge badge-2026">2026</span>
+          </label>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Last 7 Days Chart -->
+    <section class="card chart-card">
+      <div class="chart-header">
+        <div>
+          <h2>Last 7 Days</h2>
+          <p class="chart-subtitle">
+            Daily solar generation &mdash;
+            <strong id="weekTotal">—</strong> kWh total this week
+          </p>
+        </div>
+      </div>
+      <div class="chart-wrap chart-wrap-sm">
+        <canvas id="weeklyChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Recipients & Scheduled Send -->
+    <section class="card recipients-card">
+      <div class="chart-header">
+        <div>
+          <h2>📨 Recipients</h2>
+          <p class="chart-subtitle">Stats will be sent to all recipients below</p>
+        </div>
+        <button class="btn btn-secondary" onclick="addRecipient()">+ Add</button>
+      </div>
+      <ul class="recipients-list" id="recipientsList">
+        <li class="recipient-empty">Loading…</li>
+      </ul>
+
+      <!-- Schedule bar -->
+      <div class="schedule-bar">
+        <div class="schedule-controls">
+          <label class="schedule-label">Send in</label>
+          <select id="scheduleDelay" class="schedule-select">
+            <option value="60">1 minute</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+            <option value="1800">30 minutes</option>
+            <option value="3600">1 hour</option>
+          </select>
+          <button class="btn btn-primary" id="btnSchedule" onclick="scheduleStats()">
+            ⏰ Schedule Send
+          </button>
+          <button class="btn btn-secondary" id="btnCancelSchedule" onclick="cancelSchedule()" style="display:none">
+            ✕ Cancel
+          </button>
+        </div>
+        <div class="countdown-display" id="countdownDisplay" style="display:none">
+          <span class="countdown-ring" id="countdownRing">60</span>
+          <span class="countdown-label">seconds remaining — stats will be copied &amp; each conversation opened</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Bar -->
+    <section class="action-bar">
+      <button class="btn btn-messenger" onclick="sendToMessenger()">
+        💬 Send to Messenger
+      </button>
+      <button class="btn btn-whatsapp" onclick="sendToWhatsApp()">
+        📱 Send via WhatsApp
+      </button>
+      <button class="btn btn-primary" onclick="sendToAllRecipients()">
+        📨 Send to All Now
+      </button>
+    </section>
+
+  </main>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="footer-content">
+      <span>© 2026 jaccoolcode</span>
+      <span class="footer-sep">·</span>
+      <a href="mailto:jaccoolcode@gmail.com">jaccoolcode@gmail.com</a>
+      <span class="footer-sep">·</span>
+      <span>Built with ☀️ Solar Dashboard</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
