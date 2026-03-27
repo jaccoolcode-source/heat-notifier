@@ -70,4 +70,4 @@ The `data/` folder is bind-mounted in Docker so history persists across containe
 
 ## License
 
-MIT — [jaccoolcode](https://github.com/jaccoolcode)
+MIT — [jaccoolcode-source](https://github.com/jaccoolcode-source)
