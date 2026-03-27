@@ -5,6 +5,9 @@
 // Example: '48123456789' for Poland (+48).  Leave empty to open WhatsApp without a preset contact.
 const WHATSAPP_NUMBER = '';
 
+// Your Messenger self-conversation URL (messenger.com → your own chat → copy URL).
+const MESSENGER_URL = 'https://www.messenger.com/e2ee/t/1256897136187768';
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MONTHS    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS      = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -314,11 +317,11 @@ function sendToMessenger() {
   const msg = buildStatsMessage();
   navigator.clipboard.writeText(msg)
     .then(() => {
-      window.open('https://www.messenger.com/e2ee/t/1256897136187768', '_blank');
+      window.open(MESSENGER_URL, '_blank');
       showToast('📋 Stats copied — paste in Messenger!');
     })
     .catch(() => {
-      window.open('https://www.messenger.com/e2ee/t/1256897136187768', '_blank');
+      window.open(MESSENGER_URL, '_blank');
       showToast('💬 Messenger opened — copy stats manually');
     });
 }

@@ -40,7 +40,7 @@ Open `http://localhost:3000`, then click **Fetch All History** on first run.
 | What | Where |
 |---|---|
 | WhatsApp number | `WHATSAPP_NUMBER` constant at top of `public/app.js` (international format, no `+`) |
-| Messenger self-chat | Hardcoded in `sendToMessenger()` in `public/app.js` |
+| Messenger self-chat | `MESSENGER_URL` constant at top of `public/app.js` |
 | Recipients list | `data/recipients.json` (managed via dashboard UI) |
 | Inverter IP | `INVERTER_URL` / `INVERTER_OLD` constants in `server.js` |
 

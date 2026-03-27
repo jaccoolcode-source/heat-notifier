@@ -59,7 +59,7 @@ Returned dates have no year (`"MM/DD"`). `server.js` infers the year: if the ret
 - **Last 7 days chart**: teal bars, data from `week.json`
 - **Auto-refresh**: `setInterval` every 3 600 000 ms calls `POST /api/refresh` silently
 - **Scheduled send**: countdown timer opens each recipient URL in a new tab and copies stats to clipboard; recipients managed via `data/recipients.json` and `/api/recipients`
-- **Messenger button**: opens `https://www.messenger.com/e2ee/t/1256897136187768` (hardcoded self-conversation) + copies stats
+- **Messenger button**: opens `MESSENGER_URL` constant (top of `app.js`) + copies stats to clipboard
 - **WhatsApp button**: `WHATSAPP_NUMBER` constant at top of `app.js` (international format, no `+`)
 
 ### Adding a new year
