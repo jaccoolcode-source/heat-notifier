@@ -2,13 +2,22 @@ services:
   solar-dashboard:
     build: .
     container_name: solar-dashboard
-    ports:
-      - "3000:3000"
     volumes:
       # Persist JSON cache files (solar.json, week.json, recipients.json)
       # across container rebuilds. If ./data already has history it loads instantly.
       - ./data:/app/data
     restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.solar-dashboard.rule=Host(`solar-dashboard.localhost`)"
+      - "traefik.http.routers.solar-dashboard.entrypoints=web"
+      - "traefik.http.services.solar-dashboard.loadbalancer.server.port=3000"
     # The inverter at 192.168.231.240 is on the local LAN.
     # Docker Desktop for Windows routes traffic through the host automatically,
     # so no special network config is needed — the container reaches it directly.
+
+networks:
+  traefik:
+    external: true  # Shared network managed by the traefik project
