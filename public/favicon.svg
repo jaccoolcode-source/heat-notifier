@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Dark background -->
+  <rect width="32" height="32" rx="6" fill="#1a1a2e"/>
+  <!-- Sun rays -->
+  <g stroke="#f0a500" stroke-width="1.5" stroke-linecap="round">
+    <line x1="16" y1="3" x2="16" y2="6"/>
+    <line x1="16" y1="26" x2="16" y2="29"/>
+    <line x1="3" y1="16" x2="6" y2="16"/>
+    <line x1="26" y1="16" x2="29" y2="16"/>
+    <line x1="7.05" y1="7.05" x2="9.17" y2="9.17"/>
+    <line x1="22.83" y1="22.83" x2="24.95" y2="24.95"/>
+    <line x1="24.95" y1="7.05" x2="22.83" y2="9.17"/>
+    <line x1="9.17" y1="22.83" x2="7.05" y2="24.95"/>
+  </g>
+  <!-- Sun circle -->
+  <circle cx="16" cy="16" r="5.5" fill="#f0a500"/>
+</svg>
