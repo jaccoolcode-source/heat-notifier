@@ -1,13 +1,5 @@
 'use strict';
 
-// ── Config ────────────────────────────────────────────────────────────────────
-// Set your WhatsApp number in international format WITHOUT the + sign.
-// Example: '48123456789' for Poland (+48).  Leave empty to open WhatsApp without a preset contact.
-const WHATSAPP_NUMBER = '';
-
-// Your Messenger self-conversation URL (messenger.com → your own chat → copy URL).
-const MESSENGER_URL = 'https://www.messenger.com/e2ee/t/1256897136187768';
-
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MONTHS    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS      = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -15,18 +7,15 @@ const YEARS     = ['2024','2025','2026'];
 const YR_COLORS = ['#4a90e2','#4caf77','#f0a500'];
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let monthlyChart   = null;
-let weeklyChart    = null;
-let solarData      = null;
-let weekData       = null;
-let recipients     = [];
-let scheduleInterval = null;
+let monthlyChart = null;
+let weeklyChart  = null;
+let solarData    = null;
+let weekData     = null;
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   setupCharts();
   await loadData();
-  await loadRecipients();
   startAutoRefresh();
 });
 
@@ -233,7 +222,7 @@ async function refresh() {
   }
 }
 
-// ── Messaging ─────────────────────────────────────────────────────────────────
+// ── Stats ─────────────────────────────────────────────────────────────────────
 function buildStatsMessage() {
   const now       = new Date();
   const y         = String(now.getFullYear());
@@ -261,27 +250,11 @@ function buildStatsMessage() {
   ].join('\n');
 }
 
-function sendToMessenger() {
+function copyStats() {
   const msg = buildStatsMessage();
   navigator.clipboard.writeText(msg)
-    .then(() => {
-      window.open(MESSENGER_URL, '_blank');
-      showToast('📋 Stats copied — paste in Messenger!');
-    })
-    .catch(() => {
-      window.open(MESSENGER_URL, '_blank');
-      showToast('💬 Messenger opened — copy stats manually');
-    });
-}
-
-function sendToWhatsApp() {
-  const msg     = buildStatsMessage();
-  const encoded = encodeURIComponent(msg);
-  const url     = WHATSAPP_NUMBER
-    ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`
-    : `https://wa.me/?text=${encoded}`;
-  window.open(url, '_blank');
-  showToast('📱 Opening WhatsApp…');
+    .then(() => showToast('📋 Stats copied to clipboard!'))
+    .catch(() => showToast('❌ Clipboard access denied'));
 }
 
 // ── Auto-refresh (hourly) ─────────────────────────────────────────────────────
@@ -312,60 +285,6 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-// ── Recipients (loaded for Send to All — managed at /recipients) ───────────────
-async function loadRecipients() {
-  try {
-    recipients = await fetch('/api/recipients').then(r => r.json());
-  } catch { recipients = []; }
-}
-
-// ── Send to All ───────────────────────────────────────────────────────────────
-function sendToAllRecipients() {
-  if (!recipients.length) { showToast('⚠️ No recipients configured — go to ⚙️ Recipients'); return; }
-  const msg = buildStatsMessage();
-  navigator.clipboard.writeText(msg).catch(() => {});
-  let delay = 0;
-  for (const r of recipients) {
-    setTimeout(() => window.open(r.url, '_blank'), delay);
-    delay += 800;
-  }
-  showToast(`📨 Opened ${recipients.length} conversation(s) — paste with Ctrl+V`);
-}
-
-// ── Scheduled Send ────────────────────────────────────────────────────────────
-function scheduleStats() {
-  if (!recipients.length) { showToast('⚠️ Add recipients first — go to ⚙️ Recipients'); return; }
-  const delaySec = parseInt(el('scheduleDelay').value, 10);
-  let remaining  = delaySec;
-
-  el('btnSchedule').style.display       = 'none';
-  el('btnCancelSchedule').style.display = 'inline-block';
-  el('countdownDisplay').style.display  = 'flex';
-  el('countdownRing').textContent       = remaining;
-
-  scheduleInterval = setInterval(() => {
-    remaining--;
-    el('countdownRing').textContent = remaining;
-    if (remaining <= 0) {
-      clearInterval(scheduleInterval);
-      scheduleInterval = null;
-      el('countdownDisplay').style.display  = 'none';
-      el('btnSchedule').style.display       = 'inline-block';
-      el('btnCancelSchedule').style.display = 'none';
-      sendToAllRecipients();
-    }
-  }, 1000);
-}
-
-function cancelSchedule() {
-  clearInterval(scheduleInterval);
-  scheduleInterval = null;
-  el('countdownDisplay').style.display  = 'none';
-  el('btnSchedule').style.display       = 'inline-block';
-  el('btnCancelSchedule').style.display = 'none';
-  showToast('⏹️ Schedule cancelled');
 }
 
 // ── Utility ───────────────────────────────────────────────────────────────────

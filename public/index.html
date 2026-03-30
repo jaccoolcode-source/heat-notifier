@@ -19,7 +19,7 @@
       </div>
     </div>
     <div class="header-right">
-      <a class="btn btn-secondary" href="/recipients">⚙️ Recipients</a>
+      <button class="btn btn-secondary" id="btnCopy" onclick="copyStats()">📋 Copy Stats</button>
       <button class="btn btn-primary" id="btnRefresh" onclick="refresh()">
         🔄 Refresh
       </button>
@@ -98,45 +98,6 @@
       <div class="chart-wrap chart-wrap-sm">
         <canvas id="weeklyChart"></canvas>
       </div>
-    </section>
-
-    <!-- Schedule & Send -->
-    <section class="card schedule-card">
-      <div class="schedule-bar">
-        <div class="schedule-controls">
-          <label class="schedule-label">Send in</label>
-          <select id="scheduleDelay" class="schedule-select">
-            <option value="60">1 minute</option>
-            <option value="300">5 minutes</option>
-            <option value="600">10 minutes</option>
-            <option value="1800">30 minutes</option>
-            <option value="3600">1 hour</option>
-          </select>
-          <button class="btn btn-primary" id="btnSchedule" onclick="scheduleStats()">
-            ⏰ Schedule Send
-          </button>
-          <button class="btn btn-secondary" id="btnCancelSchedule" onclick="cancelSchedule()" style="display:none">
-            ✕ Cancel
-          </button>
-        </div>
-        <div class="countdown-display" id="countdownDisplay" style="display:none">
-          <span class="countdown-ring" id="countdownRing">60</span>
-          <span class="countdown-label">seconds remaining — stats will be copied &amp; each conversation opened</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Action Bar -->
-    <section class="action-bar">
-      <button class="btn btn-messenger" onclick="sendToMessenger()">
-        💬 Send to Messenger
-      </button>
-      <button class="btn btn-whatsapp" onclick="sendToWhatsApp()">
-        📱 Send via WhatsApp
-      </button>
-      <button class="btn btn-primary" onclick="sendToAllRecipients()">
-        📨 Send to All Now
-      </button>
     </section>
 
   </main>
