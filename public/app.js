@@ -15,12 +15,11 @@ const YEARS     = ['2024','2025','2026'];
 const YR_COLORS = ['#4a90e2','#4caf77','#f0a500'];
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let monthlyChart  = null;
-let weeklyChart   = null;
-let solarData     = null;
-let weekData      = null;
-let recipients    = [];
-let scheduleTimer = null;
+let monthlyChart   = null;
+let weeklyChart    = null;
+let solarData      = null;
+let weekData       = null;
+let recipients     = [];
 let scheduleInterval = null;
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
@@ -234,57 +233,6 @@ async function refresh() {
   }
 }
 
-// ── History Fetch (SSE) ───────────────────────────────────────────────────────
-function startHistoryFetch() {
-  const btn   = el('btnHistory');
-  const wrap  = el('progressWrap');
-  const bar   = el('progressBar');
-  const label = el('progressLabel');
-
-  btn.disabled    = true;
-  btn.textContent = '⏳ Fetching…';
-  wrap.style.display = 'block';
-  bar.style.width    = '0%';
-  label.textContent  = 'Connecting to inverter…';
-
-  const evtSrc = new EventSource('/api/fetch-history');
-
-  evtSrc.onmessage = async e => {
-    const data = JSON.parse(e.data);
-
-    if (data.done) {
-      evtSrc.close();
-      bar.style.width    = '100%';
-      label.textContent  = `✅ Complete — ${data.totalDays} days loaded`;
-      btn.disabled       = false;
-      btn.textContent    = '✅ History Loaded';
-      await loadData();
-      showToast(`✅ ${data.totalDays} days of history loaded!`);
-      setTimeout(() => { wrap.style.display = 'none'; }, 4000);
-
-    } else if (data.error) {
-      evtSrc.close();
-      label.textContent  = '❌ Error: ' + data.error;
-      btn.disabled       = false;
-      btn.textContent    = '📥 Fetch All History';
-      showToast('❌ History fetch error');
-
-    } else {
-      const pct = Math.round((data.progress / data.total) * 100);
-      bar.style.width   = pct + '%';
-      label.textContent = `Scanning week ${data.progress} of ${data.total} (${pct}%)…`;
-    }
-  };
-
-  evtSrc.onerror = () => {
-    evtSrc.close();
-    label.textContent = '❌ Connection lost';
-    btn.disabled      = false;
-    btn.textContent   = '📥 Fetch All History';
-    showToast('❌ History fetch interrupted');
-  };
-}
-
 // ── Messaging ─────────────────────────────────────────────────────────────────
 function buildStatsMessage() {
   const now       = new Date();
@@ -352,7 +300,7 @@ function updateTimestamp() {
   if (solarData?.lastFetched) {
     tsEl.textContent = 'Last updated: ' + new Date(solarData.lastFetched).toLocaleString();
   } else {
-    tsEl.textContent = 'No data yet — click "Fetch All History" to begin';
+    tsEl.textContent = 'No data yet — click Refresh to begin';
   }
 }
 
@@ -366,60 +314,16 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ── Recipients ────────────────────────────────────────────────────────────────
+// ── Recipients (loaded for Send to All — managed at /recipients) ───────────────
 async function loadRecipients() {
   try {
     recipients = await fetch('/api/recipients').then(r => r.json());
-    renderRecipients();
-  } catch { recipients = []; renderRecipients(); }
-}
-
-function renderRecipients() {
-  const list = el('recipientsList');
-  if (!recipients.length) {
-    list.innerHTML = '<li class="recipient-empty">No recipients yet — click + Add</li>';
-    return;
-  }
-  list.innerHTML = recipients.map((r, i) => `
-    <li class="recipient-item">
-      <span class="recipient-icon">${r.type === 'messenger' ? '💬' : '📱'}</span>
-      <span class="recipient-name">${r.name}</span>
-      <span class="recipient-url">${r.url}</span>
-      <button class="recipient-remove" onclick="removeRecipient(${i})" title="Remove">✕</button>
-    </li>`).join('');
-}
-
-async function saveRecipients() {
-  await fetch('/api/recipients', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(recipients)
-  });
-}
-
-function addRecipient() {
-  const name = prompt('Recipient name (e.g. "Jacek"):');
-  if (!name) return;
-  const url  = prompt('Messenger conversation URL\n(e.g. https://www.messenger.com/e2ee/t/...):');
-  if (!url) return;
-  const type = url.includes('whatsapp') ? 'whatsapp' : 'messenger';
-  recipients.push({ name: name.trim(), type, url: url.trim() });
-  renderRecipients();
-  saveRecipients();
-  showToast(`✅ Added recipient: ${name}`);
-}
-
-function removeRecipient(index) {
-  const r = recipients[index];
-  recipients.splice(index, 1);
-  renderRecipients();
-  saveRecipients();
-  showToast(`🗑️ Removed: ${r.name}`);
+  } catch { recipients = []; }
 }
 
 // ── Send to All ───────────────────────────────────────────────────────────────
 function sendToAllRecipients() {
-  if (!recipients.length) { showToast('⚠️ No recipients configured'); return; }
+  if (!recipients.length) { showToast('⚠️ No recipients configured — go to ⚙️ Recipients'); return; }
   const msg = buildStatsMessage();
   navigator.clipboard.writeText(msg).catch(() => {});
   let delay = 0;
@@ -432,7 +336,7 @@ function sendToAllRecipients() {
 
 // ── Scheduled Send ────────────────────────────────────────────────────────────
 function scheduleStats() {
-  if (!recipients.length) { showToast('⚠️ Add at least one recipient first'); return; }
+  if (!recipients.length) { showToast('⚠️ Add recipients first — go to ⚙️ Recipients'); return; }
   const delaySec = parseInt(el('scheduleDelay').value, 10);
   let remaining  = delaySec;
 

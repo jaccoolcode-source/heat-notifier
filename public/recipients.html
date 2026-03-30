@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipients — Solar Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-left">
+      <span class="header-icon">☀️</span>
+      <div>
+        <h1>Recipients</h1>
+        <p class="last-updated">Manage who receives your solar stats reports</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <a class="btn btn-secondary" href="/">← Dashboard</a>
+    </div>
+  </header>
+
+  <!-- ── MAIN CONTENT ──────────────────────────────────────────────────── -->
+  <main class="container">
+
+    <!-- Current recipients -->
+    <section class="card recipients-card">
+      <div class="chart-header">
+        <div>
+          <h2>📨 Recipients</h2>
+          <p class="chart-subtitle">Stats will be sent to all recipients when you use "Send to All"</p>
+        </div>
+      </div>
+      <ul class="recipients-list" id="recipientsList">
+        <li class="recipient-empty">Loading…</li>
+      </ul>
+    </section>
+
+    <!-- Add recipient form -->
+    <section class="card recipients-card">
+      <div class="chart-header">
+        <div>
+          <h2>Add Recipient</h2>
+          <p class="chart-subtitle">Paste a Messenger or WhatsApp conversation URL</p>
+        </div>
+      </div>
+      <div class="add-recipient-form">
+        <input
+          type="text"
+          id="inputName"
+          class="form-input"
+          placeholder="Name (e.g. Mum)"
+          autocomplete="off"
+        />
+        <input
+          type="url"
+          id="inputUrl"
+          class="form-input"
+          placeholder="URL (e.g. https://www.messenger.com/e2ee/t/...)"
+          autocomplete="off"
+        />
+        <button class="btn btn-primary" onclick="addRecipient()">+ Add</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="footer-content">
+      <span>© 2026 jaccoolcode</span>
+      <span class="footer-sep">·</span>
+      <a href="mailto:jaccoolcode@gmail.com">jaccoolcode@gmail.com</a>
+      <span class="footer-sep">·</span>
+      <span>Built with ☀️ Solar Dashboard</span>
+    </div>
+  </footer>
+
+  <script>
+    'use strict';
+
+    let recipients = [];
+
+    async function loadRecipients() {
+      try {
+        recipients = await fetch('/api/recipients').then(r => r.json());
+      } catch { recipients = []; }
+      renderRecipients();
+    }
+
+    function renderRecipients() {
+      const list = document.getElementById('recipientsList');
+      if (!recipients.length) {
+        list.innerHTML = '<li class="recipient-empty">No recipients yet — add one below</li>';
+        return;
+      }
+      list.innerHTML = recipients.map((r, i) => `
+        <li class="recipient-item">
+          <span class="recipient-icon">${r.type === 'messenger' ? '💬' : '📱'}</span>
+          <span class="recipient-name">${r.name}</span>
+          <span class="recipient-url">${r.url}</span>
+          <button class="recipient-remove" onclick="removeRecipient(${i})" title="Remove">✕</button>
+        </li>`).join('');
+    }
+
+    async function saveRecipients() {
+      await fetch('/api/recipients', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(recipients)
+      });
+    }
+
+    function addRecipient() {
+      const nameEl = document.getElementById('inputName');
+      const urlEl  = document.getElementById('inputUrl');
+      const name   = nameEl.value.trim();
+      const url    = urlEl.value.trim();
+      if (!name || !url) { showToast('⚠️ Name and URL are required'); return; }
+      const type = url.includes('whatsapp') ? 'whatsapp' : 'messenger';
+      recipients.push({ name, type, url });
+      nameEl.value = '';
+      urlEl.value  = '';
+      renderRecipients();
+      saveRecipients();
+      showToast(`✅ Added: ${name}`);
+    }
+
+    function removeRecipient(index) {
+      const name = recipients[index].name;
+      recipients.splice(index, 1);
+      renderRecipients();
+      saveRecipients();
+      showToast(`🗑️ Removed: ${name}`);
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    // Allow pressing Enter in URL field to add
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('inputUrl').addEventListener('keydown', e => {
+        if (e.key === 'Enter') addRecipient();
+      });
+      loadRecipients();
+    });
+  </script>
+</body>
+</html>

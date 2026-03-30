@@ -95,6 +95,72 @@ async function fetchOld(date, period) {
   return res.json();
 }
 
+// ── smart refresh ─────────────────────────────────────────────────────────────
+
+/**
+ * Incrementally fetches only missing weeks since the latest known date,
+ * then always refreshes the current week via the live GET endpoint.
+ */
+async function smartRefresh() {
+  const solar = loadJson(SOLAR_FILE, emptyData());
+  const today = new Date();
+
+  // Find latest date already stored (or fall back to HISTORY_START)
+  const knownDates = Object.keys(solar.days).sort();
+  const latestKnown = knownDates.length
+    ? new Date(knownDates[knownDates.length - 1])
+    : new Date(HISTORY_START);
+
+  // Find the scan date (multiple of 7 from HISTORY_START) that covers latestKnown
+  const weekMs       = 7 * 24 * 60 * 60 * 1000;
+  const weeksElapsed = Math.floor((latestKnown - HISTORY_START) / weekMs);
+  const startScan    = new Date(HISTORY_START.getTime() + weeksElapsed * weekMs);
+
+  // Collect all scan dates from startScan to today
+  const scanDates = [];
+  const cur = new Date(startScan);
+  while (cur <= today) {
+    scanDates.push(new Date(cur));
+    cur.setDate(cur.getDate() + 7);
+  }
+  // Always include today to catch the current partial week
+  const last = scanDates[scanDates.length - 1];
+  if (!last || last.toDateString() !== today.toDateString()) {
+    scanDates.push(new Date(today));
+  }
+
+  // Fetch each scan date from inverter
+  for (const d of scanDates) {
+    try {
+      const data = await fetchOld(d, 'weekly');
+      if (data.energy?.length) {
+        for (const e of data.energy) {
+          solar.days[toKey(e.date, inferYear(e.date, d))] = e.energy;
+        }
+      }
+    } catch { /* continue on network error */ }
+    await new Promise(r => setTimeout(r, 60));
+  }
+
+  // Always refresh current week via live GET endpoint
+  try {
+    const week = await fetchCurrentWeek();
+    saveJson(WEEK_FILE, { ...week, fetchedAt: today.toISOString() });
+    const wy = today.getFullYear();
+    week.dates.forEach((d, i) => { solar.days[toKey(d, wy)] = week.values[i]; });
+  } catch (err) {
+    console.warn('Current week fetch failed:', err.message);
+  }
+
+  solar.months      = computeMonths(solar.days);
+  solar.lastFetched = today.toISOString();
+  saveJson(SOLAR_FILE, solar);
+
+  const result = { weeksScanned: scanDates.length, totalDays: Object.keys(solar.days).length };
+  console.log(`smartRefresh: ${result.weeksScanned} week(s) scanned, ${result.totalDays} days total`);
+  return result;
+}
+
 // ── routes ────────────────────────────────────────────────────────────────────
 
 app.get('/api/data', (_req, res) => {
@@ -105,93 +171,19 @@ app.get('/api/week', (_req, res) => {
   res.json(loadJson(WEEK_FILE, { dates: [], values: [], total: 0 }));
 });
 
-/** Refresh current week + last 30 days and persist. */
+/** Smart incremental refresh — fetches only missing days + always current week. */
 app.post('/api/refresh', async (_req, res) => {
   try {
-    const solar = loadJson(SOLAR_FILE, emptyData());
-    const now   = new Date();
-
-    // 1 – current week via GET endpoint
-    const week = await fetchCurrentWeek();
-    saveJson(WEEK_FILE, { ...week, fetchedAt: now.toISOString() });
-    const wy = now.getFullYear();
-    week.dates.forEach((d, i) => { solar.days[toKey(d, wy)] = week.values[i]; });
-
-    // 2 – last 30 days via monthly period
-    const monthly = await fetchOld(now, 'monthly');
-    if (monthly.energy?.length) {
-      for (const e of monthly.energy) {
-        solar.days[toKey(e.date, inferYear(e.date, now))] = e.energy;
-      }
-    }
-
-    solar.months      = computeMonths(solar.days);
-    solar.lastFetched = now.toISOString();
-    saveJson(SOLAR_FILE, solar);
-    res.json({ success: true, lastFetched: solar.lastFetched });
+    const result = await smartRefresh();
+    res.json({ success: true, ...result });
   } catch (err) {
     console.error('Refresh error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-/**
- * GET /api/fetch-history — SSE stream.
- * Walks every 7 days from HISTORY_START to today, collecting weekly data.
- */
-app.get('/api/fetch-history', async (req, res) => {
-  res.setHeader('Content-Type',  'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection',    'keep-alive');
-  res.flushHeaders();
-
-  const sse = obj => { if (!res.writableEnded) res.write(`data: ${JSON.stringify(obj)}\n\n`); };
-
-  const solar = loadJson(SOLAR_FILE, emptyData());
-  const today = new Date();
-
-  // Build list of scan dates (every 7 days)
-  const dates = [];
-  const cur   = new Date(HISTORY_START);
-  while (cur <= today) { dates.push(new Date(cur)); cur.setDate(cur.getDate() + 7); }
-  // Ensure we include today for the current partial week
-  const last = dates[dates.length - 1];
-  if (!last || last.toDateString() !== today.toDateString()) dates.push(new Date(today));
-
-  const total = dates.length;
-  let done = 0;
-
-  for (const d of dates) {
-    if (res.writableEnded) break;
-    try {
-      const data = await fetchOld(d, 'weekly');
-      if (data.energy?.length) {
-        for (const e of data.energy) {
-          solar.days[toKey(e.date, inferYear(e.date, d))] = e.energy;
-        }
-      }
-    } catch { /* continue on network error */ }
-
-    done++;
-    sse({ progress: done, total });
-    await new Promise(r => setTimeout(r, 60));   // gentle pacing
-  }
-
-  // Grab fresh current-week data via GET
-  try {
-    const week = await fetchCurrentWeek();
-    saveJson(WEEK_FILE, { ...week, fetchedAt: today.toISOString() });
-    const wy = today.getFullYear();
-    week.dates.forEach((d, i) => { solar.days[toKey(d, wy)] = week.values[i]; });
-  } catch { /* non-fatal */ }
-
-  solar.months           = computeMonths(solar.days);
-  solar.lastHistoryFetch = today.toISOString();
-  solar.lastFetched      = today.toISOString();
-  saveJson(SOLAR_FILE, solar);
-
-  sse({ done: true, totalDays: Object.keys(solar.days).length });
-  res.end();
+app.get('/recipients', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'recipients.html'));
 });
 
 const RECIPIENTS_FILE = path.join(DATA_DIR, 'recipients.json');
@@ -209,4 +201,6 @@ app.post('/api/recipients', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`\n☀️  Solar Dashboard → http://localhost:${PORT}\n`);
+  // Run smart refresh in background on startup
+  smartRefresh().catch(err => console.warn('Startup refresh failed:', err.message));
 });

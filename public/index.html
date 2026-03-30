@@ -19,22 +19,12 @@
       </div>
     </div>
     <div class="header-right">
-      <button class="btn btn-secondary" id="btnHistory" onclick="startHistoryFetch()">
-        📥 Fetch All History
-      </button>
+      <a class="btn btn-secondary" href="/recipients">⚙️ Recipients</a>
       <button class="btn btn-primary" id="btnRefresh" onclick="refresh()">
         🔄 Refresh
       </button>
     </div>
   </header>
-
-  <!-- ── PROGRESS BAR ──────────────────────────────────────────────────── -->
-  <div class="progress-wrap" id="progressWrap" style="display:none">
-    <div class="progress-track">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <p class="progress-label" id="progressLabel">Fetching history…</p>
-  </div>
 
   <!-- ── MAIN CONTENT ──────────────────────────────────────────────────── -->
   <main class="container">
@@ -110,20 +100,8 @@
       </div>
     </section>
 
-    <!-- Recipients & Scheduled Send -->
-    <section class="card recipients-card">
-      <div class="chart-header">
-        <div>
-          <h2>📨 Recipients</h2>
-          <p class="chart-subtitle">Stats will be sent to all recipients below</p>
-        </div>
-        <button class="btn btn-secondary" onclick="addRecipient()">+ Add</button>
-      </div>
-      <ul class="recipients-list" id="recipientsList">
-        <li class="recipient-empty">Loading…</li>
-      </ul>
-
-      <!-- Schedule bar -->
+    <!-- Schedule & Send -->
+    <section class="card schedule-card">
       <div class="schedule-bar">
         <div class="schedule-controls">
           <label class="schedule-label">Send in</label>
