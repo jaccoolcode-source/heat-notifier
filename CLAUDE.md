@@ -23,7 +23,7 @@ This is a **local solar panel dashboard** — a Node.js/Express backend that pro
 
 ### Inverter API (local network only)
 - **GET** `http://192.168.231.240/index.php/realtimedata/energy_graph` — returns HTML with current-week data embedded in a Highcharts JS snippet (must be regex-parsed, not JSON)
-- **POST** `http://192.168.231.240/index.php/realtimedata/old_energy_graph` — body: `date=MM/DD/YYYY&period=weekly|monthly|yearly`; returns `{ energy: [{date: "MM/DD", energy: 3.14}], total_energy, subtitle }`. The `monthly` period returns a **30-day sliding window** ending on the given date, not a calendar month. The `yearly` period is unreliable. Weekly (7-day) scanning is used for accurate history.
+- **POST** `http://192.168.231.240/index.php/realtimedata/old_energy_graph` — body: `date=YYYY-MM-DD&period=weekly|monthly|yearly`; returns `{ energy: [{date: "MM/DD", energy: 3.14}], total_energy, subtitle }`. **Date must be `YYYY-MM-DD`** — `MM/DD/YYYY` silently returns "No Data" for historical dates. The `monthly` period returns a **30-day sliding window** ending on the given date, not a calendar month. The `yearly` period is unreliable. Weekly (7-day) scanning is used for accurate history.
 
 ### Data flow
 1. `server.js` fetches from the inverter, stores everything in `data/solar.json` and `data/week.json`.

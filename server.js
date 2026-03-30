@@ -43,7 +43,7 @@ function computeMonths(days) {
 }
 
 function pad(n) { return String(n).padStart(2, '0'); }
-function dateToStr(d) { return `${pad(d.getMonth()+1)}/${pad(d.getDate())}/${d.getFullYear()}`; }
+function dateToStr(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
 /**
  * Infer the year for a "MM/DD" date string given the request Date.
